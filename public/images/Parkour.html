@@ -1,0 +1,436 @@
+
+<!-- saved from url=(0014)about:internet -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      
+      <title>Parkour</title>
+      <style>
+    html, body {
+        overflow: hidden;
+        width   : 100%;
+        height  : 100%;
+        margin  : 0;
+        padding : 0;
+    }
+
+    #renderCanvas {
+        width   : 100%;
+        height  : 100%;
+        touch-action: none;
+    }
+	
+	.input1 {
+		border-radius:5px;
+		border-color:black;
+	}
+		</style>
+		<script src="./Parkour_files/jquery.min.js.download"></script>
+   </head>
+
+   <body>
+		<div id="options"></div>
+		<canvas id="renderCanvas" width="787" height="552" touch-action="none" tabindex="1" style="touch-action: none;"></canvas>
+		
+		<div id="chatDiv" style="position:absolute; bottom:0px; left:0px; width:220px; height:160px; background-color: rgba(50,50,50,0.4);">
+			<input type="text" id="chat" class="input-group mb-3" style="position: absolute; bottom: 110px; left: 10px; width:200px">
+			<div id="chatCont" style="position:absolute; bottom:10px; left:10px; width:200px; height:90px; background-color: rgba(25, 25, 25, 0.4); overflow-y:scroll"></div>
+			<button type="button" class="close" aria-label="Close" style="color: red; position:absolute; bottom:127.5; left:190; background: rgba(0,0,0,0); border:none; font-size:30px;" onclick="hideChat()">
+				<span aria-hidden="true">×</span>
+			</button>
+		</div>
+		<button type="button" id="openChat" style="color: rgb(200,200,200); position:absolute; bottom:10; left:10; background-color: rgba(25,25,25,0.8); border: 0px solid red; display:none" onclick="showChat()">
+				<span aria-hidden="true" style="font-size:10px;"><b>—</b></span>
+		</button>
+		<p style="position:absolute; bottom: calc(50% - 10px); left: calc(50% - 4px); color:white; width: 8px; height:20px; text-align:center;">+</p>
+		<p id="healthBar" style="position:absolute; bottom:50px; left:calc(50% - 100px); width:200px; height:25px; background-color:green;"></p>
+		<p id="healthBarOutline" style="position:absolute; bottom:50px; left:calc(50% - 100px); width:200px; height:25px; border: 1px solid white;"></p>
+		
+		<div id="weaponSelection">
+			<p id="weapon1" style="position: absolute; bottom: -7px; left: calc(50% - 85px); width: 50px; height: 50px; background-color: rgba(1, 1, 1, 0.7);"></p>
+			<p id="weapon2" style="position:absolute; bottom:-7px;left:calc(50% - 25px); width:50px; height:50px; background-color:rgba(0.3,0.3,0.3,0.3);"></p>
+			<p id="weapon3" style="position:absolute; bottom:-7px;left:calc(50% + 35px); width:50px; height:50px; background-color:rgba(0.3,0.3,0.3,0.3);"></p>
+		</div>
+		
+		<div id="mainMenu" style="display: none;">
+			<div id="blockClick" style="width:100%; height:100%; top:0%; left:0%; position:absolute; background-color:gray;"></div>
+			<p style="position:absolute; top: 40px; left: calc(50% - 200px); width:400px; font-size:3em; text-align:center; color:white;">Lazer Blast</p>
+			<input style="position:absolute; top: 150px; left: calc(50% - 100px); width:200px; height:40px;" type="text" id="nameInput" class="input1" placeholder="Name">
+		</div>
+		
+		
+		<script src="./Parkour_files/babylon.js.download"></script>
+		<script src="./Parkour_files/waterMaterial.js.download"></script>
+		<script src="./Parkour_files/babylon.gui.min.js.download"></script>
+		<script src="./Parkour_files/babylonjs.loaders.min.js.download"></script>
+		<script src="./Parkour_files/engine.js.download"></script>
+		<script src="./Parkour_files/playerCameraMultiplayer.js.download"></script>
+		
+
+		
+		
+		<script src="./Parkour_files/sc1.js.download"></script>
+		<script src="./Parkour_files/socket.io.js.download"></script>
+		<script type="text/javascript">
+		
+		var socket = io.connect(location.protocol+"//"+location.hostname+":"+location.port);
+		socket.on("connect", function(data){
+		});
+
+sceneOne = scene_one(true)
+
+runScene(sceneOne);
+
+document.getElementById("renderCanvas").addEventListener("keydown", function(k){
+	{socket.emit("key", [k.key, true])}
+});
+document.getElementById("renderCanvas").addEventListener("keyup", function(k){
+	{socket.emit("key", [k.key, false])}
+});
+
+socket.on("motion", function(k){
+	player.position=new BABYLON.Vector3(k[0], k[1],
+	k[2]);
+});
+
+socket.on("healthUpdate", function(k){
+	var p = document.getElementById("healthBar");
+	var percent = k[0]/k[1];
+	p.style.width=200*percent;
+	if (percent>0.5){
+		p.style.backgroundColor="green";
+	} else if (percent > 0.25){
+		p.style.backgroundColor="yellow";
+	} else {
+		p.style.backgroundColor="red";
+	};
+});
+
+player.isPickable=false;
+function namePlayer(ply, name, height){
+	var plane = BABYLON.Mesh.CreatePlane("plane", 2);
+	plane.billboardMode=BABYLON.Mesh.BILLBOARDMODE_ALL;
+	var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
+	var label = new BABYLON.GUI.TextBlock();
+	label.text=String(name);
+	label.width=1;
+	label.height=0.4;
+	label.color="white";
+	label.background="green";
+	label.fontSize="100px";
+	advancedTexture.addControl(label);
+	ply.position=new BABYLON.Vector3(0,0,0);
+	plane.parent=ply;
+	plane.position.y = ply.position.y+height;
+	return plane;
+};
+
+function dispPlayerHealth(ply, maxHealth, height){
+
+	var plane = BABYLON.Mesh.CreatePlane("plane", 0.125, sceneOne, true);
+	plane.scaling.x=8;
+	plane.billboardMode=BABYLON.Mesh.BILLBOARDMODE_ALL;
+	ply.position=new BABYLON.Vector3(0,0,0);
+	plane.parent=ply;
+	plane.position.y = ply.position.y+height;
+	return plane;
+	
+};
+var mat_green = new BABYLON.StandardMaterial("greenMaterial", sceneOne);
+mat_green.diffuseColor=new BABYLON.Color3(0,1,0);
+mat_green.specularColor=new BABYLON.Color3(0,1,0);
+
+var mat_yellow = new BABYLON.StandardMaterial("yellowMaterial", sceneOne);
+mat_yellow.diffuseColor=new BABYLON.Color3(1,1,0);
+mat_yellow.specularColor=new BABYLON.Color3(1,1,0);
+
+var mat_red = new BABYLON.StandardMaterial("redMaterial", sceneOne);
+mat_red.diffuseColor=new BABYLON.Color3(1,0,0);
+mat_red.specularColor=new BABYLON.Color3(1,0,0);
+
+var mat_blue = new BABYLON.StandardMaterial("blueMaterial", sceneOne);
+mat_blue.diffuseColor=new BABYLON.Color3(0,0,1);
+mat_blue.specularColor=new BABYLON.Color3(0,0,1);
+function setHealth(plane, maxHealth, currHealth){
+
+	var healthOne=currHealth/maxHealth;
+	plane.scaling.x=healthOne*8;
+	if (healthOne>0.5){
+		plane.material=mat_green;
+	} else if (healthOne>0.25){
+		plane.material=mat_yellow;
+	} else {
+		plane.material=mat_red;
+	};
+	
+};
+
+otherPlayers={};
+socket.on("ply", function(k){
+	vars = k[5];
+	if (k[1]=="terminate"){
+		if (k[0] in otherPlayers){
+			try{
+			otherPlayers[k[0]].dispose();
+			otherPlayers[k[0]].customLabel.dispose();
+			otherPlayers[k[0]].healthLabel.dispose();
+			} catch(err){};
+			delete otherPlayers[k[0]];
+		};
+	} else{
+		if (k[0] in otherPlayers){
+			otherPlayers[k[0]].position=new BABYLON.Vector3(k[1],k[2],k[3]);
+			otherPlayers[k[0]].rotation.y=k[4];
+			try{
+			setHealth(otherPlayers[k[0]].healthLabel, 100, vars.health);
+			} catch (err){;
+			};
+		} else {
+			otherPlayers[k[0]] = new BABYLON.MeshBuilder.CreateBox(String(k[0]), {width:1, depth:1, height:2}, sceneOne);
+			otherPlayers[k[0]].isPickable=false;
+			otherPlayers[k[0]].healthLabel = dispPlayerHealth(otherPlayers[k[0]], 100, 1.25);
+			if (vars.team=="red"){
+			otherPlayers[k[0]].material=mat_red;
+			} else {
+			otherPlayers[k[0]].material=mat_blue;
+			};
+		};
+		
+	};
+	if (typeof(vars)!=="undefined"){
+	if (typeof(vars["name"])!=="undefined"){
+		if (typeof(otherPlayers[k[0]].customLabel)=="undefined"){
+			otherPlayers[k[0]].customLabel = namePlayer(otherPlayers[k[0]], vars["name"], 1.5);
+		};
+	};
+	};
+});
+function sendRotation(){
+	socket.emit("rotation", [camera.rotation.x,
+	camera.rotation.y, camera.rotation.z]);
+};
+function sendRotationLoop(){
+	sendRotation();
+	setTimeout(sendRotationLoop, 50);
+};
+sendRotationLoop();
+
+
+
+// menu
+
+function showMenu(){
+	document.getElementById("mainMenu").style.display="flex";
+};
+function hideMenu(){
+	document.getElementById("mainMenu").style.display="none";
+};
+
+
+$("#nameInput").on('keydown', function (e) {
+	if (e.key === 'Enter' || e.keyCode === 13) {
+		var elem = document.getElementById("nameInput");
+		socket.emit("ready", [elem.value]);
+	};
+});
+showMenu();
+socket.on("dead", function(){
+	showMenu();
+});
+
+socket.on("alive", function(){
+	hideMenu();
+});
+
+
+
+//weaponSelection
+currWeapon="w1";
+document.getElementById("weapon2").style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+document.getElementById("weapon3").style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+document.getElementById("weapon1").style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+canvas.addEventListener("keydown", function(k){
+	var w1 = document.getElementById("weapon1");
+	var w2 = document.getElementById("weapon2");
+	var w3 = document.getElementById("weapon3");
+	if (k.key=="1"){
+		currWeapon="w1";
+		w2.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+		w3.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+		w1.style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+	} else if (k.key=="2") {
+		currWeapon="w2";
+		w1.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+		w3.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+		w2.style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+	} else if (k.key=="3") {
+		currWeapon="w3";
+		w1.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+		w2.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
+		w3.style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+	};
+});
+
+
+
+
+// chat
+
+function sendMessage(msg){
+	socket.emit("newMessage", String(msg));
+};
+
+$("#chat").on('keydown', function (e) {
+	if (e.key === 'Enter' || e.keyCode === 13) {
+		var elem = document.getElementById("chat");
+		sendMessage(elem.value);
+		elem.value="";
+	}
+});
+
+socket.on("message", function(data){
+	var chatCont=document.getElementById("chatCont");
+	var scrollBot=false;
+	if (chatCont.scrollHeight-120<=chatCont.scrollTop){
+		scrollBot=true;
+	};
+	var para = document.createElement("p");
+	var boldP=document.createElement("b");
+	var tNode=document.createTextNode(String(data[1]));
+	var tNodeName=document.createTextNode(String(data[0])+": ");
+	boldP.appendChild(tNodeName);
+	para.appendChild(boldP);
+	para.appendChild(tNode);
+	para.style.overflowWrap="break-word";
+	para.style.width="175px";
+	para.style.color="white";
+	para.style.margin="0 5 0px"
+	para.style.fontSize="10px";
+	chatCont.appendChild(para);
+	if (scrollBot){
+		chatCont.scrollTop=chatCont.scrollHeight-90;
+	};
+});
+
+function hideChat(){
+	document.getElementById("chatDiv").style.display="none";
+	document.getElementById("openChat").style.display="flex";
+};
+
+function showChat(){
+	document.getElementById("chatDiv").style.display="flex";
+	document.getElementById("openChat").style.display="none";
+};
+
+//shooting lazers
+lazTypes={"w1":"reg", "w2":"mag1", "w3":"shog1"};
+function lazerBlast(){
+	var direction = [parseFloat(Math.sin(camera.rotation.y)),
+	parseFloat(-1*Math.sin(camera.rotation.x)),
+	parseFloat(Math.cos(camera.rotation.y)), String(lazTypes[currWeapon])];
+	socket.emit("lazerBlast", direction);
+};
+
+currWepInt=0;
+canvas.addEventListener("mousedown", function(){
+	clearInterval(currWepInt);
+	currWepInt=setInterval(lazerBlast, 5);
+});
+
+canvas.addEventListener("mouseup", function(){
+	clearInterval(currWepInt);
+});
+
+
+socket.on("lazerHit", function(data){
+	var origin = new BABYLON.Vector3(data[0][0], data[0][1], data[0][2]);
+	var end = new BABYLON.Vector3(data[1][0], data[1][1], data[1][2]);
+	var line = BABYLON.MeshBuilder.CreateLines("lines", {points:[origin, end]});
+});
+
+//seeing projectiles
+socket.on("projectile", function(data){
+	var pos = data[0];
+	var partType=data[2]
+	var direc = new BABYLON.Vector3(data[1][0], data[1][1], data[1][2]);
+	if (partType=="reg"){
+	var particleSystem=new BABYLON.ParticleSystem("particles", 5000);
+	particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
+	particleSystem.particleTexture = new BABYLON.Texture("images/flare2.png")
+	particleSystem.minEmitPower=10;
+	particleSystem.maxEmitPower=20;
+	particleSystem.emitRate=1000;
+	particleSystem.minSize=0.125;
+	particleSystem.maxSize=0.125;
+	particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
+	particleSystem.minLifeTime=1;
+	particleSystem.maxLifeTime=1;
+	particleSystem.addColorGradient(0, new BABYLON.Color4(1,1,0,0));
+	} else if (partType=="mag1"){
+	var particleSystem=new BABYLON.ParticleSystem("particles", 1);
+	particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
+	particleSystem.particleTexture = new BABYLON.Texture("images/flare2.png")
+	particleSystem.minEmitPower=20;
+	particleSystem.maxEmitPower=20;
+	particleSystem.emitRate=100;
+	particleSystem.minSize=0.5;
+	particleSystem.maxSize=0.5;
+	particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
+	particleSystem.minLifeTime=0.05;
+	particleSystem.maxLifeTime=0.05;
+	particleSystem.addColorGradient(0, new BABYLON.Color4(0.5,1,0.5,0));
+	} else if (partType=="shog1"){
+		var particleSystem=new BABYLON.ParticleSystem("particles", 3000);
+		particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
+		particleSystem.particleTexture = new BABYLON.Texture("images/flare2.png")
+		particleSystem.minEmitPower=10;
+		particleSystem.maxEmitPower=20;
+		particleSystem.emitRate=1000;
+		particleSystem.minSize=0.125;
+		particleSystem.maxSize=0.125;
+		particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
+		particleSystem.minLifeTime=1;
+		particleSystem.maxLifeTime=1;
+		particleSystem.addColorGradient(0, new BABYLON.Color4(1,0,1,0));
+	};
+	try{
+	particleSystem.start();
+	setTimeout(function(k){k.stop();k.dispose()},50, particleSystem);
+	} catch(err){};
+});
+
+//audio on new lazer blast
+socket.on("newLazer", function(data){
+	var pos = player.position;
+	var bullPos=new BABYLON.Vector3(data[0][0],data[0][1],data[0][2]);
+	var bullType=data[1];
+	var distance = BABYLON.Vector3.Distance(pos,bullPos)/5+1;
+	if (bullType=="reg"){
+	var lazerBlastAudio = new Audio("audio/lazerBlast.mp3");
+	lazerBlastAudio.volume=(1/distance);
+	lazerBlastAudio.play();
+	setTimeout(function(x){x.remove()}, 3000, lazerBlastAudio);
+	} else if (bullType=="mag1"){
+	var lazerBlastAudio = new Audio("audio/mag1Blast.mp3");
+	lazerBlastAudio.volume=(1/(distance));
+	lazerBlastAudio.play();
+	setTimeout(function(x){x.remove()}, 50, lazerBlastAudio);
+	} else if (bullType="shog1"){
+	var lazerBlastAudio = new Audio("audio/shog1Blast.mp3");
+	lazerBlastAudio.volume=(1/(distance));
+	lazerBlastAudio.play();
+	setTimeout(function(x){x.remove()}, 3000, lazerBlastAudio);
+	};
+});
+
+
+
+
+//winter update
+
+canvas.addEventListener("keydown", function(k){
+	if (k.key=="\\"){
+		snowSystem.dispose();
+	};
+});
+		</script>
+   
+</body></html>

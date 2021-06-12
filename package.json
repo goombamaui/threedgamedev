@@ -1,0 +1,27 @@
+{
+  "name": "threedgamedev",
+  "version": "1.0.0",
+  "description": "3d game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goombamaui/threedgamedev.git"
+  },
+  "author": "Aarush Vailaya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/goombamaui/threedgamedev/issues"
+  },
+  "homepage": "https://github.com/goombamaui/threedgamedev#readme",
+  "dependencies": {
+    "babylonjs": "^4.2.0",
+    "babylonjs-loaders": "^4.2.0",
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "socket.io": "^4.1.2",
+    "xhr2": "^0.2.1"
+  }
+}
