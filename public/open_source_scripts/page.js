@@ -1,94 +1,34 @@
 
-<!-- saved from url=(0014)about:internet -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-      
-      <title>Parkour</title>
-      <style>
-    html, body {
-        overflow: hidden;
-        width   : 100%;
-        height  : 100%;
-        margin  : 0;
-        padding : 0;
-    }
-
-    #renderCanvas {
-        width   : 100%;
-        height  : 100%;
-        touch-action: none;
-    }
-	
-	.input1 {
-		border-radius:5px;
-		border-color:black;
-	}
-		</style>
-		<script src="./Parkour_files/jquery.min.js.download"></script>
-   </head>
-
-   <body>
-		<div id="options"></div>
-		<canvas id="renderCanvas" width="787" height="552" touch-action="none" tabindex="1" style="touch-action: none;"></canvas>
-		
-		<div id="chatDiv" style="position:absolute; bottom:0px; left:0px; width:220px; height:160px; background-color: rgba(50,50,50,0.4);">
-			<input type="text" id="chat" class="input-group mb-3" style="position: absolute; bottom: 110px; left: 10px; width:200px">
-			<div id="chatCont" style="position:absolute; bottom:10px; left:10px; width:200px; height:90px; background-color: rgba(25, 25, 25, 0.4); overflow-y:scroll"></div>
-			<button type="button" class="close" aria-label="Close" style="color: red; position:absolute; bottom:127.5; left:190; background: rgba(0,0,0,0); border:none; font-size:30px;" onclick="hideChat()">
-				<span aria-hidden="true">×</span>
-			</button>
-		</div>
-		<button type="button" id="openChat" style="color: rgb(200,200,200); position:absolute; bottom:10; left:10; background-color: rgba(25,25,25,0.8); border: 0px solid red; display:none" onclick="showChat()">
-				<span aria-hidden="true" style="font-size:10px;"><b>—</b></span>
-		</button>
-		<p style="position:absolute; bottom: calc(50% - 10px); left: calc(50% - 4px); color:white; width: 8px; height:20px; text-align:center;">+</p>
-		<p id="healthBar" style="position:absolute; bottom:50px; left:calc(50% - 100px); width:200px; height:25px; background-color:green;"></p>
-		<p id="healthBarOutline" style="position:absolute; bottom:50px; left:calc(50% - 100px); width:200px; height:25px; border: 1px solid white;"></p>
-		
-		<div id="weaponSelection">
-			<p id="weapon1" style="position: absolute; bottom: -7px; left: calc(50% - 85px); width: 50px; height: 50px; background-color: rgba(1, 1, 1, 0.7);"></p>
-			<p id="weapon2" style="position:absolute; bottom:-7px;left:calc(50% - 25px); width:50px; height:50px; background-color:rgba(0.3,0.3,0.3,0.3);"></p>
-			<p id="weapon3" style="position:absolute; bottom:-7px;left:calc(50% + 35px); width:50px; height:50px; background-color:rgba(0.3,0.3,0.3,0.3);"></p>
-		</div>
-		
-		<div id="mainMenu" style="display: none;">
-			<div id="blockClick" style="width:100%; height:100%; top:0%; left:0%; position:absolute; background-color:gray;"></div>
-			<p style="position:absolute; top: 40px; left: calc(50% - 200px); width:400px; font-size:3em; text-align:center; color:white;">Lazer Blast</p>
-			<input style="position:absolute; top: 150px; left: calc(50% - 100px); width:200px; height:40px;" type="text" id="nameInput" class="input1" placeholder="Name">
-		</div>
-		
-		
-		<script src="./Parkour_files/babylon.js.download"></script>
-		<script src="./Parkour_files/waterMaterial.js.download"></script>
-		<script src="./Parkour_files/babylon.gui.min.js.download"></script>
-		<script src="./Parkour_files/babylonjs.loaders.min.js.download"></script>
-		<script src="./Parkour_files/engine.js.download"></script>
-		<script src="./Parkour_files/playerCameraMultiplayer.js.download"></script>
-		
-
-		
-		
-		<script src="./Parkour_files/sc1.js.download"></script>
-		<script src="./Parkour_files/socket.io.js.download"></script>
-		<script type="text/javascript">
-		
 		var socket = io.connect(location.protocol+"//"+location.hostname+":"+location.port);
 		socket.on("connect", function(data){
 		});
-
+		var updateLoop={};
 sceneOne = scene_one(true)
 
 runScene(sceneOne);
 
 document.getElementById("renderCanvas").addEventListener("keydown", function(k){
-	{socket.emit("key", [k.key, true])}
+	socket.emit("key", [k.key, true]);
 });
 document.getElementById("renderCanvas").addEventListener("keyup", function(k){
-	{socket.emit("key", [k.key, false])}
+	socket.emit("key", [k.key, false]);
 });
 
 socket.on("motion", function(k){
 	player.position=new BABYLON.Vector3(k[0], k[1],
 	k[2]);
+});
+
+var camZoom=0.1;
+document.getElementById("renderCanvas").addEventListener("keydown", function(k){
+	if (k.key=="c"){
+		camera.fov=camZoom;
+	};
+});
+document.getElementById("renderCanvas").addEventListener("keyup", function(k){
+	if (k.key=="c"){
+		camera.fov=1;
+	};
 });
 
 socket.on("healthUpdate", function(k){
@@ -165,32 +105,36 @@ function setHealth(plane, maxHealth, currHealth){
 
 otherPlayers={};
 socket.on("ply", function(k){
-	vars = k[5];
+	var vars = k[5];
 	if (k[1]=="terminate"){
 		if (k[0] in otherPlayers){
 			try{
-			otherPlayers[k[0]].dispose();
-			otherPlayers[k[0]].customLabel.dispose();
-			otherPlayers[k[0]].healthLabel.dispose();
+			var curMesh = otherPlayers[k[0]];
+			curMesh.dispose();
+			curMesh.customLabel.dispose();
+			curMesh.healthLabel.dispose();
 			} catch(err){};
-			delete otherPlayers[k[0]];
+			delete curMesh;
 		};
 	} else{
 		if (k[0] in otherPlayers){
-			otherPlayers[k[0]].position=new BABYLON.Vector3(k[1],k[2],k[3]);
-			otherPlayers[k[0]].rotation.y=k[4];
+			var curMesh = otherPlayers[k[0]];
+			curMesh.position=new BABYLON.Vector3(k[1],k[2],k[3]);
+			//console.log(vars["name"]+"/"+curMesh.name+":["+k[1]+","+k[2]+","+k[3]+"]");
+			curMesh.rotation.y=k[4];
 			try{
-			setHealth(otherPlayers[k[0]].healthLabel, 100, vars.health);
-			} catch (err){;
+			setHealth(curMesh.healthLabel, 100, vars.health);
+			} catch (err){
 			};
 		} else {
 			otherPlayers[k[0]] = new BABYLON.MeshBuilder.CreateBox(String(k[0]), {width:1, depth:1, height:2}, sceneOne);
-			otherPlayers[k[0]].isPickable=false;
-			otherPlayers[k[0]].healthLabel = dispPlayerHealth(otherPlayers[k[0]], 100, 1.25);
+			var curMesh = otherPlayers[k[0]];
+			curMesh.isPickable=false;
+			curMesh.healthLabel = dispPlayerHealth(otherPlayers[k[0]], 100, 1.25);
 			if (vars.team=="red"){
-			otherPlayers[k[0]].material=mat_red;
+			curMesh.material=mat_red;
 			} else {
-			otherPlayers[k[0]].material=mat_blue;
+			curMesh.material=mat_blue;
 			};
 		};
 		
@@ -199,19 +143,13 @@ socket.on("ply", function(k){
 	if (typeof(vars["name"])!=="undefined"){
 		if (typeof(otherPlayers[k[0]].customLabel)=="undefined"){
 			otherPlayers[k[0]].customLabel = namePlayer(otherPlayers[k[0]], vars["name"], 1.5);
+			otherPlayers[k[0]].name=vars["name"];
 		};
 	};
 	};
 });
-function sendRotation(){
-	socket.emit("rotation", [camera.rotation.x,
-	camera.rotation.y, camera.rotation.z]);
-};
-function sendRotationLoop(){
-	sendRotation();
-	setTimeout(sendRotationLoop, 50);
-};
-sendRotationLoop();
+
+
 
 
 
@@ -243,29 +181,37 @@ socket.on("alive", function(){
 
 
 //weaponSelection
-currWeapon="w1";
+var lazTypes={"w1":"reg", "w2":"mag1", "w3":"shog1", "w4":"snip1"};
+var w1 = document.getElementById("weapon1");
+var w2 = document.getElementById("weapon2");
+var w3 = document.getElementById("weapon3");
+var w4=document.getElementById("weapon4");
+var htmlLaztypes=[w1,w2,w3,w4];
+var currWeapon="w1";
 document.getElementById("weapon2").style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
 document.getElementById("weapon3").style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
 document.getElementById("weapon1").style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+function deSelWeapon(k){k.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)"};
+function selWeapon(k){k.style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+for (i=0;i<htmlLaztypes.length;i++){
+	if (htmlLaztypes[i]!=k){
+	deSelWeapon(htmlLaztypes[i]);
+	};
+};
+};
 canvas.addEventListener("keydown", function(k){
-	var w1 = document.getElementById("weapon1");
-	var w2 = document.getElementById("weapon2");
-	var w3 = document.getElementById("weapon3");
 	if (k.key=="1"){
 		currWeapon="w1";
-		w2.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
-		w3.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
-		w1.style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+		selWeapon(w1);
 	} else if (k.key=="2") {
 		currWeapon="w2";
-		w1.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
-		w3.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
-		w2.style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+		selWeapon(w2);
 	} else if (k.key=="3") {
 		currWeapon="w3";
-		w1.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
-		w2.style.backgroundColor="rgba(0.3,0.3,0.3,0.3)";
-		w3.style.backgroundColor="rgba(0.7,0.7,0.7,0.7)";
+		selWeapon(w3);
+	} else if (k.key=="4"){
+		currWeapon="w4";
+		selWeapon(w4);
 	};
 });
 
@@ -321,30 +267,35 @@ function showChat(){
 };
 
 //shooting lazers
-lazTypes={"w1":"reg", "w2":"mag1", "w3":"shog1"};
+
 function lazerBlast(){
-	var direction = [parseFloat(Math.sin(camera.rotation.y)),
-	parseFloat(-1*Math.sin(camera.rotation.x)),
-	parseFloat(Math.cos(camera.rotation.y)), String(lazTypes[currWeapon])];
+	var direction = [parseFloat(Math.sin(camera.rotation.y)*Math.cos(-1*camera.rotation.x)),
+	parseFloat(Math.sin(-1*camera.rotation.x)),
+	parseFloat(Math.cos(camera.rotation.y)*Math.cos(-1*camera.rotation.x)), String(lazTypes[currWeapon])];
 	socket.emit("lazerBlast", direction);
 };
 
-currWepInt=0;
 canvas.addEventListener("mousedown", function(){
-	clearInterval(currWepInt);
-	currWepInt=setInterval(lazerBlast, 5);
+	updateLoop["lazer"]=true;
 });
 
 canvas.addEventListener("mouseup", function(){
-	clearInterval(currWepInt);
+	updateLoop["lazer"]=false;
 });
 
 
-socket.on("lazerHit", function(data){
-	var origin = new BABYLON.Vector3(data[0][0], data[0][1], data[0][2]);
-	var end = new BABYLON.Vector3(data[1][0], data[1][1], data[1][2]);
-	var line = BABYLON.MeshBuilder.CreateLines("lines", {points:[origin, end]});
-});
+
+//reusing particle systems
+var partSystems=[];
+function getPartSystem(){
+	if (partSystems.length>0){return partSystems.pop()} else{console.log("nPart");
+		var particleSystem=new BABYLON.ParticleSystem("particles", 10);
+		particleSystem.particleTexture = new BABYLON.Texture("images/flare2.png");
+		partSystems.push(particleSystem);
+		return particleSystem;
+	};
+};
+
 
 //seeing projectiles
 socket.on("projectile", function(data){
@@ -352,48 +303,72 @@ socket.on("projectile", function(data){
 	var partType=data[2]
 	var direc = new BABYLON.Vector3(data[1][0], data[1][1], data[1][2]);
 	if (partType=="reg"){
-	var particleSystem=new BABYLON.ParticleSystem("particles", 5000);
+	var particleSystem=getPartSystem();
 	particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
-	particleSystem.particleTexture = new BABYLON.Texture("images/flare2.png")
-	particleSystem.minEmitPower=10;
-	particleSystem.maxEmitPower=20;
-	particleSystem.emitRate=1000;
-	particleSystem.minSize=0.125;
-	particleSystem.maxSize=0.125;
-	particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
-	particleSystem.minLifeTime=1;
-	particleSystem.maxLifeTime=1;
-	particleSystem.addColorGradient(0, new BABYLON.Color4(1,1,0,0));
-	} else if (partType=="mag1"){
-	var particleSystem=new BABYLON.ParticleSystem("particles", 1);
-	particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
-	particleSystem.particleTexture = new BABYLON.Texture("images/flare2.png")
+	particleSystem.blendMode=0;
 	particleSystem.minEmitPower=20;
-	particleSystem.maxEmitPower=20;
+	particleSystem.maxEmitPower=40;
+	particleSystem.emitRate=300;
+	particleSystem.minSize=0.5;
+	particleSystem.maxSize=0.5;
+	particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
+	particleSystem.minLifeTime=0.5;
+	particleSystem.maxLifeTime=0.5;
+	particleSystem.color1=new BABYLON.Color3(1,1,0);
+	particleSystem.color2=new BABYLON.Color3(1,1,0);
+	particleSystem.start();
+	setTimeout(function(k){k.stop();k.reset();partSystems.push(k)},100, particleSystem);
+	} else if (partType=="snip1"){
+	var particleSystem=getPartSystem();
+	particleSystem.blendMode=0;
+	particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
+	particleSystem.minEmitPower=20;
+	particleSystem.maxEmitPower=40;
+	particleSystem.emitRate=300;
+	particleSystem.minSize=1.2;
+	particleSystem.maxSize=1.2;
+	particleSystem.minLifeTime=0.4;
+	particleSystem.maxLifeTime=0.4;
+	particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
+	particleSystem.color1=new BABYLON.Color4(1,0.5,0,1);
+	particleSystem.color2=new BABYLON.Color4(1,0.5,0,1);
+	particleSystem.start();
+	setTimeout(function(k){k.stop();k.reset();partSystems.push(k)},100, particleSystem);
+	} else if (partType=="mag1"){
+	var particleSystem=getPartSystem();
+	particleSystem.blendMode=0;
+	particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
+	particleSystem.minEmitPower=30;
+	particleSystem.maxEmitPower=30;
 	particleSystem.emitRate=100;
 	particleSystem.minSize=0.5;
 	particleSystem.maxSize=0.5;
 	particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
 	particleSystem.minLifeTime=0.05;
 	particleSystem.maxLifeTime=0.05;
-	particleSystem.addColorGradient(0, new BABYLON.Color4(0.5,1,0.5,0));
+	particleSystem.color1=new BABYLON.Color3(0.5,1,0.5);
+	particleSystem.color2=new BABYLON.Color3(0.5,1,0.5);
+	particleSystem.start();
+	setTimeout(function(k){k.stop();k.reset();partSystems.push(k)},75, particleSystem);
 	} else if (partType=="shog1"){
-		var particleSystem=new BABYLON.ParticleSystem("particles", 3000);
+		var particleSystem=getPartSystem();
+		particleSystem.blendMode=0;
 		particleSystem.emitter = new BABYLON.Vector3(pos[0],pos[1],pos[2]);
-		particleSystem.particleTexture = new BABYLON.Texture("images/flare2.png")
 		particleSystem.minEmitPower=10;
 		particleSystem.maxEmitPower=20;
-		particleSystem.emitRate=1000;
+		particleSystem.emitRate=200;
 		particleSystem.minSize=0.125;
 		particleSystem.maxSize=0.125;
 		particleSystem.createDirectedSphereEmitter(0.05, direc,direc);
-		particleSystem.minLifeTime=1;
-		particleSystem.maxLifeTime=1;
-		particleSystem.addColorGradient(0, new BABYLON.Color4(1,0,1,0));
+		particleSystem.minLifeTime=0.1;
+		particleSystem.maxLifeTime=0.1;
+		particleSystem.color1=new BABYLON.Color3(1,0,1);
+		particleSystem.color2=new BABYLON.Color3(1,0,1);
+		particleSystem.start();
+		setTimeout(function(k){k.stop();k.reset();partSystems.push(k)},50, particleSystem);
 	};
 	try{
-	particleSystem.start();
-	setTimeout(function(k){k.stop();k.dispose()},50, particleSystem);
+	
 	} catch(err){};
 });
 
@@ -421,16 +396,44 @@ socket.on("newLazer", function(data){
 	};
 });
 
+var options = new BABYLON.SceneOptimizerOptions(45, 50);
+//options.addOptimization(new BABYLON.HardwareScalingOptimization(2, 3));
+options.addOptimization(new BABYLON.TextureOptimization(0, 512));
+options.addOptimization(new BABYLON.PostProcessesOptimization(1));
+options.addOptimization(new BABYLON.ShadowsOptimization(1));
+// Optimizer
+var lightOptimizer = new BABYLON.SceneOptimizer(sceneOne, options);
 
+setInterval(function (k){k.stop(); k.start()}, 10000, lightOptimizer);
+lightOptimizer.start();
 
+var options2 = new BABYLON.SceneOptimizerOptions(45, 50);
+options2.addOptimization(new BABYLON.HardwareScalingOptimization(1, 3));
+options2.addOptimization(new BABYLON.RenderTargetsOptimization(1));
+options2.addOptimization(new BABYLON.LensFlaresOptimization(1));
+options2.addOptimization(new BABYLON.MergeMeshesOptimization(1));
+options2.addOptimization(new BABYLON.TextureOptimization(1, 64));
 
-//winter update
+//Hard optimizer
+var hardOptimizer = new BABYLON.SceneOptimizer(sceneOne, options2);
 
 canvas.addEventListener("keydown", function(k){
 	if (k.key=="\\"){
-		snowSystem.dispose();
+		hardOptimizer.start();
 	};
 });
-		</script>
-   
-</body></html>
+
+//game client to server update loop
+updateLoop["lazer"]=false;
+function updateLoopFunc(){
+	//rotation
+	socket.emit("rotation", [camera.rotation.x,camera.rotation.y, camera.rotation.z]);
+	//lazers
+	if (updateLoop["lazer"]){
+		lazerBlast();
+	};
+	
+	//Do it again!
+	setTimeout(updateLoopFunc, 50);
+};
+updateLoopFunc();

@@ -38,8 +38,6 @@ function scene_one(eng){
 	waterMaterial.waveLength = 0.1;
 	waterMaterial.waveCount=1000;
 	waterMaterial.waveSpeed=2;
-	const xr = scene.createDefaultXRExperienceAsync({
-	});
 
 	
 	
@@ -174,8 +172,7 @@ function scene_one(eng){
 		skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
 		skybox.material = skyboxMaterial;
 		waterMaterial = new BABYLON.WaterMaterial("water", scene);
-		waterMaterial.addToRenderList(skybox);
-		
+		//waterMaterial.addToRenderList(skybox);
 		//Fog
 		scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
 		scene.fogStart = 300.0;
@@ -198,6 +195,7 @@ function scene_one(eng){
 		scene.freezeActiveMeshes();
 		setTimeout(function(k){k.freezeActiveMeshes()}, 3000, scene);
 	};
-	
+
 	return scene;
 };
+console.log("DONE")
