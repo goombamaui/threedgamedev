@@ -26,19 +26,6 @@ function scene_one(eng){
 		scene.autoClearDepthAndStencil = false; // Depth and stencil, obviously
 		
 
-
-	waterMaterial.bumpTexture = new BABYLON.Texture("images/waterbump.png", scene);
-	
-	waterMaterial.windForce = -10;
-	waterMaterial.waveHeight = 0.5;
-	waterMaterial.windDirection = new BABYLON.Vector2(1, 1);
-	waterMaterial.waterColor = new BABYLON.Color4(0.1, 0.1, 0.6, 0.5);
-	waterMaterial.colorBlendFactor = 0.2;
-	waterMaterial.bumpHeight = 1;
-	waterMaterial.waveLength = 0.1;
-	waterMaterial.waveCount=1000;
-	waterMaterial.waveSpeed=2;
-
 	
 	
 	
@@ -70,15 +57,12 @@ function scene_one(eng){
 			
 			
 		if (k.name=="Ocean_mesh"){
-			k.material=waterMaterial;
 			k.backFaceCulling=false;
 		} else if (k.name=="Ground"){
 			ground=k;
 			ground.material.specularIntensity=0;
-			waterMaterial.addToRenderList(ground);
 		} else if (k.name=="noColl_bg1"){
 			k.backFaceCulling=false;
-			waterMaterial.addToRenderList(k);
 			k.material.specularIntensity=0;
 		} else if (k.name=="Barrier"){
 			k.material.alpha=0.01;
@@ -171,8 +155,6 @@ function scene_one(eng){
 		skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
 		skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
 		skybox.material = skyboxMaterial;
-		waterMaterial = new BABYLON.WaterMaterial("water", scene);
-		//waterMaterial.addToRenderList(skybox);
 		//Fog
 		scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
 		scene.fogStart = 300.0;
@@ -195,7 +177,6 @@ function scene_one(eng){
 		scene.freezeActiveMeshes();
 		setTimeout(function(k){k.freezeActiveMeshes()}, 3000, scene);
 	};
-
+	
 	return scene;
 };
-console.log("DONE")
