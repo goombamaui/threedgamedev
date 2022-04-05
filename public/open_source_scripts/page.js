@@ -120,7 +120,7 @@ socket.on("ply", function(k){
 		if (k[0] in otherPlayers){
 			var curMesh = otherPlayers[k[0]];
 			curMesh.position=new BABYLON.Vector3(k[1],k[2],k[3]);
-			//console.log(vars["name"]+"/"+curMesh.name+":["+k[1]+","+k[2]+","+k[3]+"]");
+			console.log(vars["name"]+"/"+curMesh.name+":["+k[1]+","+k[2]+","+k[3]+"]");
 			curMesh.rotation.y=k[4];
 			try{
 			setHealth(curMesh.healthLabel, 100, vars.health);
@@ -128,6 +128,7 @@ socket.on("ply", function(k){
 			};
 		} else {
 			otherPlayers[k[0]] = new BABYLON.MeshBuilder.CreateBox(String(k[0]), {width:1, depth:1, height:2}, sceneOne);
+			console.log("NEW");
 			var curMesh = otherPlayers[k[0]];
 			curMesh.isPickable=false;
 			curMesh.healthLabel = dispPlayerHealth(otherPlayers[k[0]], 100, 1.25);

@@ -13,6 +13,8 @@ projectiles={};
 blueTeam=[];
 redTeam=[];
 
+sockets=[]
+
 
 //socket setups
 io.on("connection", function (socket) {
@@ -237,7 +239,8 @@ function killPlayer(i){
 		plyMeshes[i].position=new BABYLON.Vector3(-100,-300,-100);
 	};
 	ply[i].vars.ready=false;
-	io.to(i).emit("dead");
+	let z=io.to(i);
+	z.emit("dead");
 };
 
 function revivePlayer(i){
@@ -247,7 +250,8 @@ function revivePlayer(i){
 	} else {
 		plyMeshes[i].position=new BABYLON.Vector3(-610,-23.5,657);
 	};
-	io.to(i).emit("alive");
+	let z=io.to(i);
+	z.emit("alive");
 };
 
 var playerSpeed=40; //25
@@ -343,21 +347,23 @@ function updatePlayers(){
 		plyMeshes[i].checkCollisions=true;
 		plyMeshes[i].moveWithCollisions(new BABYLON.Vector3(
 		motion[0], motion[1], motion[2]));
-		io.to(i).emit("motion",[plyMeshes[i].position.x, plyMeshes[i].position.y, plyMeshes[i].position.z]);
-		io.to(i).emit("healthUpdate", [ply[i]["custom"]["health"], 100])
+		let z=io.to(i);
+		z.emit("motion",[plyMeshes[i].position.x, plyMeshes[i].position.y, plyMeshes[i].position.z]);
+		z.emit("healthUpdate", [ply[i]["custom"]["health"], 100])
 		//console.log(ply[i]["custom"]["name"]+":["+plyMeshes[i].position.x+","+plyMeshes[i].position.y+","+
 		//plyMeshes[i].position.z+"]");
 		
-		var sockets = io.sockets.sockets;
-		for (var p in sockets){
+		
+		for (var p in ply){
 			if (i == p){continue};
-			io.to(p).emit("ply", [i,plyMeshes[i].position.x, plyMeshes[i].position.y, plyMeshes[i].position.z,ply[i]["rotation"][1], ply[i]["custom"]]);
+			let z=io.to(p);
+			z.emit("ply", [i,plyMeshes[i].position.x, plyMeshes[i].position.y, plyMeshes[i].position.z,ply[i]["rotation"][1], ply[i]["custom"]]);
 		}
 		
 		plyMeshes[i].checkCollisions=false;
 		} catch (err){
 			try{
-				io.sockets.connect[socketId].disconnect();
+				sockets[i].disconnect();
 			}catch(err){console.log(err)};
 		};
 	};
@@ -445,4 +451,12 @@ function updateGame(){
 	} else {console.log("BLOB")};
 	//console.log("Tot: "+String(t3.getTime()-t1.getTime()));
 };
+
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+async function getSockets(){ sockets = await io.fetchSockets();}
+
+setInterval(getSockets,500);
 setInterval(updateGame, 25);
